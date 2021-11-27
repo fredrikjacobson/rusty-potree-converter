@@ -1,0 +1,59 @@
+{
+	"version": "2.0",
+	"name": "intermediate",
+	"description": "",
+	"points": 495934,
+	"projection": "",
+	"hierarchy": {
+		"firstChunkSize": 1694, 
+		"stepSize": 4, 
+		"depth": 8
+	},
+	"offset": [-200.57946999999999, -107.24418, -29.125328],
+	"scale": [9.9999999999999995e-07, 9.9999999999999995e-07, 9.9999999999999995e-07],
+	"spacing": 3.156700625,
+	"boundingBox": {
+		"min": [-200.57946999999999, -107.24418, -29.125328], 
+		"max": [203.47821000000002, 296.81349999999998, 374.93235199999998]
+	},
+	"encoding": "DEFAULT",
+	"attributes": [
+		{
+			"name": "position",
+			"description": "",
+			"size": 12,
+			"numElements": 3,
+			"elementSize": 4,
+			"type": "int32",
+			"min": [-200.57946999999999, -107.24418, -29.125328],
+			"max": [203.47820999999999, 199.00026, 22.023847999999997]
+		},{
+			"name": "intensity",
+			"description": "",
+			"size": 2,
+			"numElements": 1,
+			"elementSize": 2,
+			"type": "uint16",
+			"min": [0],
+			"max": [65278]
+		},{
+			"name": "gps-time",
+			"description": "",
+			"size": 8,
+			"numElements": 1,
+			"elementSize": 8,
+			"type": "double",
+			"min": [1618645777897613],
+			"max": [1618645777997551]
+		},{
+			"name": "rgb",
+			"description": "",
+			"size": 6,
+			"numElements": 3,
+			"elementSize": 2,
+			"type": "uint16",
+			"min": [0, 0, 0],
+			"max": [65535, 7, 0]
+		}
+	]
+}
