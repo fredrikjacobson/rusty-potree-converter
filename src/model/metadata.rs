@@ -1,5 +1,4 @@
-use crate::indexing::model::Hierarchy as IndexingHierarchy;
-use crate::indexing::model::Node;
+use crate::model::hierarchy::Hierarchy as IndexingHierarchy;
 use crate::model::attributes::{Attribute as InternalAttribute, Attributes};
 
 use crate::potree;
@@ -93,51 +92,13 @@ pub struct Metadata {
 
 impl Metadata {
 	pub fn create(
-		root: &Node,
-		attributes: &Attributes,
-		options: &Options,
-		state: &State,
-		hierarchy: IndexingHierarchy,
-		spacing: f64,
-		depth: u8,
-	) -> Metadata {
-		let min = root.min.clone();
-		let max = root.max.clone();
-		Metadata {
-			version: "2.0".to_string(),
-			name: options.name.to_string(),
-			description: "".to_string(),
-			points: state.points_total,
-			projection: "".to_string(),
-			hierarchy: Hierarchy {
-				first_chunk_size: hierarchy.first_chunk_size as u16,
-				step_size: hierarchy.step_size,
-				depth,
-			},
-			offset: attributes.posOffset.to_array(),
-			scale: attributes.posOffset.to_array(),
-			spacing: spacing,
-			bounding_box: BoundingBox {
-				min: [min.x, min.y, min.z],
-				max: [max.x, max.y, max.z],
-			},
-			encoding: options.encoding,
-			attributes: attributes
-				.list
-				.iter()
-				.map(|attribute| Attribute::from_attribute(attribute))
-				.collect(),
-		}
-	}
-
-	pub fn create_2(
 		root: &potree::Node,
 		attributes: Vec<metadata::Attribute>,
 		options: &Options,
 		state: &State,
 		hierarchy: &IndexingHierarchy,
 		spacing: f64,
-		depth: u8,
+		scale: f64,
 	) -> Metadata {
 		let min = &root.bounds;
 		let max = &root.bounds;
@@ -150,10 +111,10 @@ impl Metadata {
 			hierarchy: Hierarchy {
 				first_chunk_size: hierarchy.first_chunk_size as u16,
 				step_size: hierarchy.step_size,
-				depth,
+				depth: hierarchy.depth,
 			},
-			offset: [0.0, 0.0, 0.0],
-			scale: [0.0, 0.0, 0.0],
+			offset: [root.bounds.lx, root.bounds.ly, root.bounds.lz],
+			scale: [scale, scale, scale],
 			spacing: spacing,
 			bounding_box: BoundingBox {
 				min: [min.lx, min.ly, min.lz],

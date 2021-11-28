@@ -1,6 +1,5 @@
-use crate::indexing::model::Vector3;
+use crate::model::vector3::Vector3;
 use ord_subset::OrdSubsetIterExt;
-use std::slice::Iter;
 
 pub struct Potree {
 	pub bounds: Bounds,
@@ -15,10 +14,11 @@ pub struct Potree {
 
 	pub root: Node,
 }
+
 const DIAGONAL_FRACTION: f64 = 200.0;
 
 impl Potree {
-	fn new(points: Vec<Vector3>, bounds: Bounds, point_per_leaf_node_limit: u32) -> Potree {
+	pub fn new(points: Vec<Vector3>, bounds: Bounds, point_per_leaf_node_limit: u32) -> Potree {
 		let cubic_bounds = bounds.cubic();
 		let size_len = ((cubic_bounds.size_x * cubic_bounds.size_x)
 			+ (cubic_bounds.size_y * cubic_bounds.size_y)
@@ -30,7 +30,7 @@ impl Potree {
 			"r".to_string(),
 			spacing,
 			bounds.clone(),
-			emptyChildNodeArray(),
+			empty_child_node_array(),
 			point_per_leaf_node_limit,
 		);
 
@@ -87,7 +87,7 @@ impl Node {
 			max_points_per_leaf_node,
 			bounds: bounds,
 			children,
-			grid: emptyGridArray(),
+			grid: empty_grid_array(),
 			initial_store: Vec::new(),
 			byte_offset: 0,
 			byte_size: 0,
@@ -141,7 +141,7 @@ impl Node {
 		} else {
 			let grid_index_outer = Node::find_grid_index(&point, &self.bounds);
 			let grid_index_inner =
-				Node::find_grid_index(&point, &self.computeChildBounds(grid_index_outer));
+				Node::find_grid_index(&point, &self.compute_child_bounds(grid_index_outer));
 			if self.grid[grid_index_outer][grid_index_inner]
 				.iter()
 				.any(|p| Node::within_distance(&p, &point, self.squared_spacing))
@@ -173,8 +173,8 @@ impl Node {
 		Node::new(
 			format!("{}{}", &self.name, index.to_string()),
 			self.spacing / 2.0,
-			self.computeChildBounds(index),
-			emptyChildNodeArray(),
+			self.compute_child_bounds(index),
+			empty_child_node_array(),
 			self.max_points_per_leaf_node,
 		)
 	}
@@ -183,7 +183,7 @@ impl Node {
 		let x_diff = (a.x - b.x) * (a.x - b.x);
 		let y_diff = (a.y - b.y) * (a.y - b.y);
 		let z_diff = (a.z - b.z) * (a.z - b.z);
-		x_diff + y_diff + z_diff < squared_distance
+		(x_diff + y_diff + z_diff) < squared_distance
 	}
 	fn find_grid_index(point: &Vector3, bounds: &Bounds) -> usize {
 		let low_x = point.x < (bounds.lx + bounds.ux) / 2.0; //lower than mid x
@@ -207,42 +207,82 @@ impl Node {
 			7
 		}
 	}
-	fn computeChildBounds(&self, index: usize) -> Bounds {
+	fn compute_child_bounds(&self, index: usize) -> Bounds {
 		let bounds = &self.bounds;
-		let boundsMidX = (bounds.lx + bounds.ux) / 2.0;
-		let boundsMidY = (bounds.ly + bounds.uy) / 2.0;
-		let boundsMidZ = (bounds.lz + bounds.uz) / 2.0;
+		let bounds_mid_x = (bounds.lx + bounds.ux) / 2.0;
+		let bounds_mid_y = (bounds.ly + bounds.uy) / 2.0;
+		let bounds_mid_z = (bounds.lz + bounds.uz) / 2.0;
 		if index == 0 {
 			Bounds::new(
-				boundsMidX, boundsMidY, boundsMidZ, bounds.lx, bounds.ly, bounds.lz,
+				bounds_mid_x,
+				bounds_mid_y,
+				bounds_mid_z,
+				bounds.lx,
+				bounds.ly,
+				bounds.lz,
 			)
 		} else if index == 1 {
 			Bounds::new(
-				boundsMidX, boundsMidY, bounds.uz, bounds.lx, bounds.ly, boundsMidZ,
+				bounds_mid_x,
+				bounds_mid_y,
+				bounds.uz,
+				bounds.lx,
+				bounds.ly,
+				bounds_mid_z,
 			)
 		} else if index == 2 {
 			Bounds::new(
-				boundsMidX, bounds.uy, boundsMidZ, bounds.lx, boundsMidY, bounds.lz,
+				bounds_mid_x,
+				bounds.uy,
+				bounds_mid_z,
+				bounds.lx,
+				bounds_mid_y,
+				bounds.lz,
 			)
 		} else if index == 3 {
 			Bounds::new(
-				boundsMidX, bounds.uy, bounds.uz, bounds.lx, boundsMidY, boundsMidZ,
+				bounds_mid_x,
+				bounds.uy,
+				bounds.uz,
+				bounds.lx,
+				bounds_mid_y,
+				bounds_mid_z,
 			)
 		} else if index == 4 {
 			Bounds::new(
-				bounds.ux, boundsMidY, boundsMidZ, boundsMidX, bounds.ly, bounds.lz,
+				bounds.ux,
+				bounds_mid_y,
+				bounds_mid_z,
+				bounds_mid_x,
+				bounds.ly,
+				bounds.lz,
 			)
 		} else if index == 5 {
 			Bounds::new(
-				bounds.ux, boundsMidY, bounds.uz, boundsMidX, bounds.ly, boundsMidZ,
+				bounds.ux,
+				bounds_mid_y,
+				bounds.uz,
+				bounds_mid_x,
+				bounds.ly,
+				bounds_mid_z,
 			)
 		} else if index == 6 {
 			Bounds::new(
-				bounds.ux, bounds.uy, boundsMidZ, boundsMidX, boundsMidY, bounds.lz,
+				bounds.ux,
+				bounds.uy,
+				bounds_mid_z,
+				bounds_mid_x,
+				bounds_mid_y,
+				bounds.lz,
 			)
 		} else {
 			Bounds::new(
-				bounds.ux, bounds.uy, bounds.uz, boundsMidX, boundsMidY, boundsMidZ,
+				bounds.ux,
+				bounds.uy,
+				bounds.uz,
+				bounds_mid_x,
+				bounds_mid_y,
+				bounds_mid_z,
 			)
 		}
 	}
@@ -251,24 +291,24 @@ impl Node {
 type GridRow = [Vec<Vector3>; 8];
 type NodeGrid = [GridRow; 8];
 
-fn emptyChildNodeArray() -> [Option<Box<Node>>; 8] {
+fn empty_child_node_array() -> [Option<Box<Node>>; 8] {
 	[None, None, None, None, None, None, None, None]
 }
 
-fn emptyGridArray() -> NodeGrid {
+fn empty_grid_array() -> NodeGrid {
 	[
-		emptyGridRow(),
-		emptyGridRow(),
-		emptyGridRow(),
-		emptyGridRow(),
-		emptyGridRow(),
-		emptyGridRow(),
-		emptyGridRow(),
-		emptyGridRow(),
+		empty_grid_row(),
+		empty_grid_row(),
+		empty_grid_row(),
+		empty_grid_row(),
+		empty_grid_row(),
+		empty_grid_row(),
+		empty_grid_row(),
+		empty_grid_row(),
 	]
 }
 
-fn emptyGridRow() -> GridRow {
+fn empty_grid_row() -> GridRow {
 	[
 		Vec::new(),
 		Vec::new(),
@@ -281,7 +321,8 @@ fn emptyGridRow() -> GridRow {
 	]
 }
 
-fn findBounds(points: &Vec<Vector3>) -> Bounds {
+#[allow(dead_code)]
+fn find_bounds(points: &Vec<Vector3>) -> Bounds {
 	let xs: Vec<f64> = points.iter().map(|p| p.x).collect();
 	let ys: Vec<f64> = points.iter().map(|p| p.y).collect();
 	let zs: Vec<f64> = points.iter().map(|p| p.z).collect();
@@ -338,79 +379,83 @@ impl Bounds {
 
 #[cfg(test)]
 mod tests {
-	use crate::hierarchy::create_hierarchy;
-	use crate::potree::findBounds;
-	use crate::potree::GridRow;
+	use std::io::Cursor;
+
+	use crate::potree::find_bounds;
 	use crate::potree::Node;
 	use crate::potree::NodeGrid;
 	use crate::potree::Potree;
 	use crate::potree::Vector3;
 	use crate::writer::write_potree;
+	use byteorder::LittleEndian;
+	use byteorder::ReadBytesExt;
 	use rand::prelude::*;
-	use std::collections::HashMap;
 	use std::fs;
 	use std::path::Path;
 
 	fn setup_potree(point_count: u32, node_limit: u32) -> Potree {
 		let mut rng = rand::thread_rng();
-		let y: f64 = rng.gen();
 
 		let point_per_leaf_node_limit = node_limit;
 		let mut points = Vec::new();
-		for i in 0..point_count {
+		for _i in 0..point_count {
 			points.push(Vector3 {
 				x: rng.gen_range(0.0..100.0),
-				y: rng.gen_range(0.0..100.0),
+				y: rng.gen_range(0.0..10.0),
 				z: rng.gen_range(0.0..10.0),
 			});
 		}
 
-		let bounds = findBounds(&points);
+		let bounds = find_bounds(&points);
 		Potree::new(points, bounds, point_per_leaf_node_limit)
 	}
 
 	#[test]
-	fn node_points_returns_points() {
-		let count = 10_000;
-		let potree = setup_potree(count, 1000);
-
-		assert_eq!(potree.root.num_points(), count as usize);
-	}
-
-	#[test]
 	fn test_write_potree() {
-		let count = 10_000;
+		let count = 100;
 		let potree = setup_potree(count, 1000);
 		let dir = Path::new("/Users/fredrikjacobson/stuff/rusty-potree-converter/test-output");
 		write_potree(potree, dir);
-
 		let file_size = fs::metadata(dir.join("octree.bin")).unwrap().len();
 		let points_written = file_size / (3 * 4);
 		assert_eq!(count as u64, points_written);
 	}
 
-	// #[test]
-	// fn test_write_hierarchy() {
-	// 	let potree = setup_potree(10_000, 1000);
-	// 	let mut fake_hierarchy = HashMap::new();
-	// 	fn add_node(map: &mut HashMap<String, (u32, u32)>, node: &Node) {
-	// 		map.insert(node.name.to_string(), (0, 0));
-	// 		for child in &node.children {
-	// 			if let Some(child) = child {
-	// 				add_node(map, &child);
-	// 			}
-	// 		}
-	// 	}
+	#[test]
+	fn test_write_binary_points() {
+		let buffer = fs::read("resources/points.bin").unwrap();
+		let length = buffer.len();
+		let mut cursor = Cursor::new(buffer);
+		let pos = 0;
+		let mut points: Vec<Vector3> = Vec::new();
 
-	// 	fake_hierarchy.insert(potree.root.name.to_string(), (0, 0));
-	// 	for child in &potree.root.children {
-	// 		if let Some(child) = child {
-	// 			add_node(&mut fake_hierarchy, child);
-	// 		}
-	// 	}
-	// 	create_hierarchy(&potree.root, fake_hierarchy);
-	// }
+		while cursor.position() < (length - 1) as u64 {
+			points.push(Vector3 {
+				x: cursor.read_f64::<LittleEndian>().unwrap(),
+				y: cursor.read_f64::<LittleEndian>().unwrap(),
+				z: cursor.read_f64::<LittleEndian>().unwrap(),
+			})
+		}
+		for p in 0..5 {
+			let point = &points[p];
+			println!("x: {}, y: {}, z: {}", point.x, point.y, point.z);
+		}
 
+		println!("{}", points.len());
+		let expected_points = 495934;
+		assert_eq!(points.len(), expected_points);
+		let bounds = find_bounds(&points);
+		let potree = Potree::new(points, bounds, 20000);
+
+		let dir = Path::new("/Users/fredrikjacobson/stuff/rusty-potree-converter/test-output");
+		write_potree(potree, dir);
+
+		let file_size = fs::metadata(dir.join("octree.bin")).unwrap().len();
+		let points_written = file_size / (3 * 4);
+		assert_eq!(expected_points as u64, points_written);
+	}
+
+	#[allow(dead_code)]
 	fn print_grid(grid: &NodeGrid) -> String {
 		let mut rows = Vec::new();
 		for row in 0..8 {
@@ -430,6 +475,7 @@ mod tests {
 		rows.join("\n")
 	}
 
+	#[allow(dead_code)]
 	fn print_node(node: &Node, level: u8) {
 		println!(
 			"{} Node with store {} is_leaf {} count {}",
@@ -439,13 +485,11 @@ mod tests {
 			node.num_points()
 		);
 		println!("{}", print_grid(&node.grid));
-		let mut i = 0;
 		for child in &node.children {
 			if let Some(child) = child {
 				print_node(&child, level + 1);
 			} else {
 			}
-			i += 1;
 		}
 	}
 }

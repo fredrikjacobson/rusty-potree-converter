@@ -1,4 +1,4 @@
-use crate::indexing::model::Vector3;
+use crate::model::vector3::Vector3;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -35,20 +35,20 @@ pub struct Attributes {
 	pub list: Vec<Attribute>,
 	pub bytes: i32,
 
-	pub posScale: Vector3,
-	pub posOffset: Vector3,
+	pub pos_scale: Vector3,
+	pub pos_offset: Vector3,
 }
 
 impl Attributes {
 	pub fn new() -> Attributes {
 		Attributes {
 			bytes: 0,
-			posScale: Vector3 {
+			pos_scale: Vector3 {
 				x: 1.0,
 				y: 1.0,
 				z: 1.0,
 			},
-			posOffset: Vector3 {
+			pos_offset: Vector3 {
 				x: 0.0,
 				y: 0.0,
 				z: 0.0,
@@ -60,12 +60,12 @@ impl Attributes {
 	pub fn from_attributes(attributes: Vec<Attribute>) -> Attributes {
 		Attributes {
 			bytes: 0,
-			posScale: Vector3 {
+			pos_scale: Vector3 {
 				x: 1.0,
 				y: 1.0,
 				z: 1.0,
 			},
-			posOffset: Vector3 {
+			pos_offset: Vector3 {
 				x: 0.0,
 				y: 0.0,
 				z: 0.0,
@@ -74,7 +74,7 @@ impl Attributes {
 		}
 	}
 
-	fn getOffset(&self, name: String) -> i32 {
+	fn get_offset(&self, name: String) -> i32 {
 		let mut offset = 0;
 
 		for attribute in &self.list {

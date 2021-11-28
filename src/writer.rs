@@ -1,8 +1,9 @@
-use crate::hierarchy::create_hierarchy;
-use crate::indexing::model::Hierarchy;
+use crate::model::hierarchy::create_hierarchy;
+use crate::model::hierarchy::Hierarchy;
 use crate::model::metadata::Attribute;
 use crate::model::metadata::Metadata;
 use crate::model::options::{Encoding, Options};
+use crate::model::vector3::Vector3;
 use crate::model::State;
 use crate::potree::Node;
 use crate::potree::Potree;
@@ -13,7 +14,7 @@ use std::io::Error;
 use std::io::Write;
 use std::path::Path;
 
-const HrcStepSize: usize = 5; // must be 2 or more
+const HRC_STEP_SIZE: usize = 5; // must be 2 or more
 pub enum WriteError {
 	PrepareDirError { msg: String },
 }
@@ -23,21 +24,21 @@ pub fn write_potree(potree: Potree, dir: &Path) -> Option<WriteError> {
 	let mut writer = Writer::new();
 	writer.write(&mut f, &potree);
 	let hierarchy = create_hierarchy(&potree.root, writer.node_hierarchy);
-	write_hierarchy(&potree, &hierarchy, dir).unwrap();
-	write_head(&potree, &hierarchy, dir).unwrap();
+	write_hierarchy(&hierarchy, dir).unwrap();
+	write_metadata(&potree, &hierarchy, dir).unwrap();
 
 	None
 }
 
-fn write_hierarchy(potree: &Potree, hierarchy: &Hierarchy, dir: &Path) -> Result<(), Error> {
+fn write_hierarchy(hierarchy: &Hierarchy, dir: &Path) -> Result<(), Error> {
 	let mut file = File::create(dir.join("hierarchy.bin"))?;
 
 	file.write_all(&hierarchy.buffer)?;
 	Ok(())
 }
 
-fn write_head(potree: &Potree, hierarchy: &Hierarchy, dir: &Path) -> Result<(), Error> {
-	let metadata = Metadata::create_2(
+fn write_metadata(potree: &Potree, hierarchy: &Hierarchy, dir: &Path) -> Result<(), Error> {
+	let metadata = Metadata::create(
 		&potree.root,
 		vec![Attribute {
 			name: "position".to_string(),
@@ -61,7 +62,7 @@ fn write_head(potree: &Potree, hierarchy: &Hierarchy, dir: &Path) -> Result<(), 
 		},
 		hierarchy,
 		potree.spacing,
-		0,
+		potree.scale,
 	);
 
 	let file = File::create(dir.join("metadata.json"))?;
@@ -86,14 +87,19 @@ impl Writer {
 		}
 	}
 
-	fn write(&mut self, mut f: &mut File, potree: &Potree) {
-		self.write_nodes(f, vec![&potree.root], potree.scale)
+	fn write(&mut self, f: &mut File, potree: &Potree) {
+		let offset = Vector3 {
+			x: potree.bounds.lx,
+			y: potree.bounds.ly,
+			z: potree.bounds.lz,
+		};
+		self.write_nodes(f, vec![&potree.root], potree.scale, &offset)
 	}
 
-	fn write_nodes(&mut self, mut f: &mut File, nodes: Vec<&Node>, scale: f64) {
+	fn write_nodes(&mut self, mut f: &mut File, nodes: Vec<&Node>, scale: f64, offset: &Vector3) {
 		let mut children: Vec<&Node> = Vec::new();
 		for node in nodes.iter() {
-			self.write_points(&mut f, node, scale);
+			self.write_points(&mut f, node, scale, offset);
 
 			for child in node.children.iter() {
 				if let Some(child) = child {
@@ -104,25 +110,25 @@ impl Writer {
 			}
 		}
 		let new_hierarchy_level = match children.first() {
-			Some(node) if node.name.len() > 1 && node.name.len() % HrcStepSize == 0 => true,
+			Some(node) if node.name.len() > 1 && node.name.len() % HRC_STEP_SIZE == 0 => true,
 			_ => false,
 		};
 		if new_hierarchy_level {
 			for node in children {
-				self.write_nodes(&mut f, vec![node], scale)
+				self.write_nodes(&mut f, vec![node], scale, offset)
 			}
 		} else if !children.is_empty() {
-			self.write_nodes(&mut f, children, scale)
+			self.write_nodes(&mut f, children, scale, offset)
 		}
 	}
 
-	fn write_points(&mut self, file: &mut File, node: &Node, scale: f64) {
+	fn write_points(&mut self, file: &mut File, node: &Node, scale: f64, offset: &Vector3) {
 		let byte_size = node.num_points() as u32 * self.bytes_per_point;
 		let byte_offset = self.byte_offset;
 		for point in node.points() {
-			let cart_x = ((point.x - node.bounds.lx) / scale).round() as i32;
-			let cart_y = ((point.y - node.bounds.ly) / scale).round() as i32;
-			let cart_z = ((point.z - node.bounds.lz) / scale).round() as i32;
+			let cart_x = ((point.x - offset.x) / scale).round() as i32;
+			let cart_y = ((point.y - offset.y) / scale).round() as i32;
+			let cart_z = ((point.z - offset.z) / scale).round() as i32;
 			file.write_i32::<LittleEndian>(cart_x).unwrap();
 			file.write_i32::<LittleEndian>(cart_y).unwrap();
 			file.write_i32::<LittleEndian>(cart_z).unwrap();
@@ -131,6 +137,7 @@ impl Writer {
 
 		self.byte_offset += byte_size;
 
-		self.node_hierarchy.insert(node.name.to_string(), (byte_size, byte_offset));
+		self.node_hierarchy
+			.insert(node.name.to_string(), (byte_size, byte_offset));
 	}
 }
