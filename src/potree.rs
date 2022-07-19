@@ -97,7 +97,7 @@ mod tests {
     fn test_write_potree() {
         let count = 100;
         let potree = setup_potree(count, 1000);
-        let dir = Path::new("/Users/fredrikjacobson/stuff/rusty-potree-converter/test-output");
+        let dir = Path::new("/tmp/test-output");
         write_potree(potree, dir);
         let file_size = fs::metadata(dir.join("octree.bin")).unwrap().len();
         let points_written = file_size / (3 * 4);
@@ -129,7 +129,7 @@ mod tests {
         assert_eq!(points.len(), expected_points);
         let potree = Potree::new(points, 20000);
 
-        let dir = Path::new("/Users/fredrikjacobson/stuff/rusty-potree-converter/test-output");
+        let dir = Path::new("/tmp/test-output");
         write_potree(potree, dir);
 
         let file_size = fs::metadata(dir.join("octree.bin")).unwrap().len();

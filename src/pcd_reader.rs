@@ -1,11 +1,10 @@
-use anyhow::Result;
 use pcd_rs::{anyhow, DynReader, DynRecord};
 
 use crate::{model::vector3::Vector3, potree::Potree};
 
-pub fn from_pcd(buf: &[u8]) -> Result<Potree> {
+pub fn from_pcd(buf: &[u8]) -> Result<Potree, Box<dyn std::error::Error>> {
     let reader = DynReader::from_bytes(buf)?;
-    let pcd: Result<Vec<DynRecord>> = reader.collect();
+    let pcd: Result<Vec<DynRecord>, anyhow::Error> = reader.collect();
 
     let mut points: Vec<Vector3> = Vec::new();
 
