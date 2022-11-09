@@ -12,5 +12,6 @@ serde = { version = "1.0", features = ["derive"] }
 byteorder = "1"
 rand = "0.8.4"
 ord_subset = "3.1.1"
+csv = "1.1"
 
 
